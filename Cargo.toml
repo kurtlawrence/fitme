@@ -1,0 +1,20 @@
+[package]
+name = "fitme"
+version = "0.1.0"
+edition = "2021"
+authors = ["Kurt Lawrence <kurtlawrence.info>"]
+description = "CLI curve fitting tool. Parameterise an equation from a CSV dataset."
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+comfy-table = "6"
+csv = "1"
+meval = "0.2"
+miette = { version = "5", features = ["fancy"] }
+numfmt = { git = "https://github.com/kdr-aus/numfmt" }
+rmpfit = "0.2"
+
+[dev-dependencies]
+assert_cmd = "2"
