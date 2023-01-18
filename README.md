@@ -121,7 +121,7 @@ Alter the output via the `--out` switch.
 
 ### CSV
 ```plaintext
-> fitme y "m * x + c" file1.csv -o=csv -n                           main !?   v1.66.1 
+> fitme y "m * x + c" file1.csv -o=csv -n
 Parameter,Value,Standard Error,t-value
 m,1.7709542029456211,0.011883297834310212,149.02884936809457
 c,3.2099657167997013,0.013936863525869892,230.32195951702457
@@ -129,7 +129,7 @@ c,3.2099657167997013,0.013936863525869892,230.32195951702457
 
 ### Markdown
 ```plaintext
-> fitme y "m * x + c" file1.csv -o=md -n                            main !?   v1.66.1 
+> fitme y "m * x + c" file1.csv -o=md -n
 | Parameter | Value | Standard Error | t-value |
 |-----------|-------|----------------|---------|
 | m         | 1.770 |          0.011 |   149.0 |
@@ -138,7 +138,7 @@ c,3.2099657167997013,0.013936863525869892,230.32195951702457
 
 ### JSON
 ```plaintext
-> fitme y "m * x + c" file1.csv -o=json -n                          main !?   v1.66.1 
+> fitme y "m * x + c" file1.csv -o=json -n
 {"parameter_names":["m","c"],"parameter_values":[1.7709542029456211,3.2099657167997013],"n":10,"xerrs":[0.011883297834310212,0.013936863525869892],"rmsr":0.04392493014188053,"rsq":0.9995948974725735,"tvals":[149.02884936809457,230.32195951702457]}
 ```
 
