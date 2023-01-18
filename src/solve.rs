@@ -1,9 +1,14 @@
 use super::*;
 use data::Data;
-use rmpfit::{MPError, MPFitter, MPResult, MPStatus};
+use rmpfit::{MPError, MPFitter, MPResult};
+use serde::*;
 
+/// The result of [`fit`].
+#[derive(Serialize, Deserialize)]
 pub struct Fit {
+    /// The names of the parameters.
     pub parameter_names: Vec<String>,
+    /// The fitted values of the parameters.
     pub parameter_values: Vec<f64>,
 
     /// Number of observations.
@@ -28,7 +33,69 @@ struct Fitter<E> {
     tgt: usize,
 }
 
-pub fn fit<E: Equation>(mut eq: E, data: Data, target: &str) -> Result<Fit> {
+/// Fit an equation using the input data.
+///
+/// If you are using `fitme` as a library, this is function to use!
+///
+/// ## Equation
+/// The equation is anything which implements [`Equation`].
+/// See [`crate::expr::v1::Eq`] for an implementation.
+///
+/// ## Target
+/// Target is the observed resulting column. For example, in the equation `y = mx + c`, `y` would
+/// be the target column.
+///
+/// # Example
+/// Let's fit a linear regression to the following data:
+///
+/// |  y  |  x  |
+/// | --- | --- |
+/// | 1.9000429E-01 | -1.7237128E+00 |
+/// | 6.5807428E+00 | 1.8712276E+00 |
+/// | 1.4582725E+00 | -9.6608055E-01 |
+/// | 2.7270851E+00 | -2.8394297E-01 |
+/// | 5.5969253E+00 | 1.3416969E+00 |
+/// | 5.6249280E+00 | 1.3757038E+00 |
+/// | 0.787615 | -1.3703436E+00 |
+/// | 3.2599759E+00 | 4.2581975E-02 |
+/// | 2.9771762E+00 | -1.4970151E-01 |
+/// | 4.5936475E+00 | 8.2065094E-01 |
+///
+/// Equation: `y = m * x + c`
+///
+/// Here the:
+/// - _target_: `y`
+/// - _variables_: `x`
+/// - _parameters_: `m`, `c`
+///
+/// ```rust
+/// use fitme::*;
+///
+/// let data = Data::new(
+///     Headers::from_iter(["y", "x"]),
+///     vec![
+///         vec![1.9000429E-01,-1.7237128E+00],
+///         vec![6.5807428E+00,1.8712276E+00],
+///         vec![1.4582725E+00,-9.6608055E-01],
+///         vec![2.7270851E+00,-2.8394297E-01],
+///         vec![5.5969253E+00,1.3416969E+00],
+///         vec![5.6249280E+00,1.3757038E+00],
+///         vec![0.787615,-1.3703436E+00],
+///         vec![3.2599759E+00,4.2581975E-02],
+///         vec![2.9771762E+00,-1.4970151E-01],
+///         vec![4.5936475E+00,8.2065094E-01],
+///     ]
+/// ).unwrap();
+///
+/// let eq = fitme::expr::v1::Eq::parse("m * x + c", data.headers()).unwrap();
+///
+/// let fit = fitme::fit(eq, data, "y").unwrap();
+///
+/// assert_eq!(fit.n, 10);
+/// assert_eq!(&fit.parameter_names, &["m".to_string(), "c".to_string()]);
+/// assert_eq!(&fit.parameter_values, &[1.7709542029456211, 3.2099657167997013]);
+/// ```
+pub fn fit<E: Equation>(eq: E, data: Data, target: &str) -> Result<Fit> {
     let tgt = data
         .headers()
         .find_ignore_case(target)
@@ -43,7 +110,7 @@ pub fn fit<E: Equation>(mut eq: E, data: Data, target: &str) -> Result<Fit> {
         .map_err(|e| miette!("{}", e))
         .wrap_err("failed to fit the equation to the input data")?;
 
-    let Fitter { data, mut eq, tgt } = fitter;
+    let Fitter { data, eq, tgt } = fitter;
 
     let n = data.len() as f64;
     let k = params.len() as f64;
@@ -55,10 +122,9 @@ pub fn fit<E: Equation>(mut eq: E, data: Data, target: &str) -> Result<Fit> {
         / n;
 
     // Y predicition from regression.
-    eq.set_params(&params);
     let y_pred: Vec<f64> = data
         .rows()
-        .map(|row| eq.solve(row))
+        .map(|row| eq.solve(&params, row))
         .try_fold(Vec::new(), |mut x, y| {
             y.map(|y| {
                 x.push(y);
@@ -127,11 +193,8 @@ impl<E: Equation> MPFitter for Fitter<E> {
     }
 
     fn eval(&self, params: &[f64], deviates: &mut [f64]) -> MPResult<()> {
-        let mut eq = self.eq.clone();
-        eq.set_params(params);
-
         for (d, row) in deviates.iter_mut().zip(self.data.rows()) {
-            let f = eq.solve(row).ok_or(MPError::Eval)?;
+            let f = self.eq.solve(params, row).ok_or(MPError::Eval)?;
             let y = row.get(self.tgt).expect("inside data");
             *d = y - f;
         }

@@ -278,6 +278,8 @@ dependencies = [
  "miette",
  "numfmt",
  "rmpfit",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -498,8 +500,9 @@ checksum = "a5b8c256fd9471521bcb84c3cdba98921497f1a331cbc15b8030fc63b82050ce"
 
 [[package]]
 name = "numfmt"
-version = "0.1.0"
-source = "git+https://github.com/kdr-aus/numfmt#950f945f4edd00128f8bccc946a309fb0a39efdc"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "99458e8f460fb1628dc6ba8e69b0392cd4b75ab5212c0a3bfe77b54cb5618e44"
 dependencies = [
  "dtoa",
  "itoa 1.0.5",
@@ -705,6 +708,31 @@ name = "serde"
 version = "1.0.152"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb7d1f0d3021d347a83e556fc4683dea2ea09d87bccdf88ff5c12545d89d5efb"
+dependencies = [
+ "serde_derive",
+]
+
+[[package]]
+name = "serde_derive"
+version = "1.0.152"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af487d118eecd09402d70a5d72551860e788df87b464af30e5ea6a38c75c541e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "serde_json"
+version = "1.0.91"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "877c235533714907a8c2464236f5c4b2a17262ef1bd71f38f35ea592c8da6883"
+dependencies = [
+ "itoa 1.0.5",
+ "ryu",
+ "serde",
+]
 
 [[package]]
 name = "signal-hook"

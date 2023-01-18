@@ -1,3 +1,5 @@
+//! Version 1 of the equation resolver.
+
 use super::*;
 use meval::{tokenizer::Token, Expr};
 
@@ -10,9 +12,12 @@ use meval::{tokenizer::Token, Expr};
  *
  * Instead, the bind happens on the `solve` method, both params and variables are bound in this
  * call which solves the lifetime issue.
- * This requires that a store of the params is kept around (`Eq.inputs`).
  */
 
+/// Version 1 of the equation resolver.
+///
+/// Equations are expected to be the typical RHS. For instance, to solve for `y = m * x + c`, the
+/// equation to parse is `m * x + c`.
 #[derive(Clone)]
 pub struct Eq {
     /// Variable (column) bindings.
@@ -20,11 +25,6 @@ pub struct Eq {
 
     /// Unmapped variables represent the parameters to twiddle with.
     params: Vec<String>,
-
-    /// Scratch store for params.
-    ///
-    /// This is required for evaluation of meval. See root note.
-    inputs: Vec<f64>,
 
     /// Parsed expression.
     expr: Expr,
@@ -50,14 +50,9 @@ impl Equation for Eq {
             }
         }
 
-        let inputs = vec![0f64; params.len()];
-
-        debug_assert_eq!(params.len(), inputs.len());
-
         Ok(Self {
             vars,
             params,
-            inputs,
             expr: func,
         })
     }
@@ -66,17 +61,7 @@ impl Equation for Eq {
         self.params.len()
     }
 
-    fn set_params(&mut self, params: &[f64]) {
-        assert_eq!(
-            self.inputs.len(),
-            params.len(),
-            "`params` length must equal self.params_len()"
-        );
-
-        self.inputs.copy_from_slice(params);
-    }
-
-    fn solve(&self, row: DataRow) -> Option<f64> {
+    fn solve(&self, params: &[f64], row: DataRow) -> Option<f64> {
         // build a vector of the params + variable names
         let vars = self
             .params
@@ -91,7 +76,7 @@ impl Equation for Eq {
         // build the inputs
         let mut inputs = Vec::with_capacity(vars.len());
 
-        inputs.extend_from_slice(&self.inputs); // first, the stored params
+        inputs.extend_from_slice(params); // first, the stored params
         for (_, i) in &self.vars {
             inputs.push(row.get(*i)?); // then the params
         }

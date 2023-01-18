@@ -1,25 +1,35 @@
 use super::*;
 
+/// Input data headers representation.
 pub struct Headers(Vec<String>);
 
+/// Input data representation.
+///
+/// Input data is represented as a set of text headers and _rows_ of numbers.
 pub struct Data {
     cols: Headers,
     rows: Vec<Vec<f64>>,
 }
 
 impl Headers {
+    /// The number of headers.
+    ///
+    /// This is the same as the number of columns.
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
+    /// Find the column which matches the string `s`.
     pub fn find(&self, s: &str) -> Option<usize> {
         self.find_match(|x| x.eq(s))
     }
 
+    /// Find the column which matches the string `s`, ignoring ASCII case.
     pub fn find_ignore_case(&self, s: &str) -> Option<usize> {
         self.find_match(|x| x.eq_ignore_ascii_case(s))
     }
 
+    /// Find the column index which matches the predicate.
     pub fn find_match<P>(&self, predicate: P) -> Option<usize>
     where
         P: Fn(&str) -> bool,
@@ -42,6 +52,7 @@ impl<T: AsRef<str>> FromIterator<T> for Headers {
 }
 
 impl Data {
+    /// Build the input data from the headers and numeric numbers.
     pub fn new(headers: Headers, data: Vec<Vec<f64>>) -> Result<Self> {
         let headers_len = headers.len();
 
@@ -64,10 +75,12 @@ impl Data {
         self.rows.len()
     }
 
+    /// The set of headers.
     pub fn headers(&self) -> &Headers {
         &self.cols
     }
 
+    /// Return an iterator of [`DataRow`].
     pub fn rows(&self) -> impl ExactSizeIterator<Item = DataRow> {
         self.rows.iter().enumerate().map(|(idx, vals)| DataRow {
             idx,
@@ -77,6 +90,7 @@ impl Data {
     }
 }
 
+/// A single row [`Data`].
 #[derive(Copy, Clone)]
 pub struct DataRow<'a> {
     idx: usize,
@@ -85,8 +99,19 @@ pub struct DataRow<'a> {
 }
 
 impl<'a> DataRow<'a> {
+    /// Get the value at the column index.
     pub fn get(&self, colidx: usize) -> Option<f64> {
         self.vals.get(colidx).copied()
+    }
+
+    /// The row index.
+    pub fn idx(&self) -> usize {
+        self.idx
+    }
+
+    /// The [`Data`] headers.
+    pub fn headers(&self) -> &Headers {
+        self.hdrs
     }
 }
 

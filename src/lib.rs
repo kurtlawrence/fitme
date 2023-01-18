@@ -1,3 +1,5 @@
+#![warn(missing_docs)]
+
 use clap::{Parser, ValueEnum};
 use miette::*;
 use std::{
@@ -7,10 +9,12 @@ use std::{
 };
 
 mod data;
-mod expr;
+pub mod expr;
 mod solve;
 
-use expr::Equation;
+pub use expr::Equation;
+pub use data::{Headers, Data, DataRow};
+pub use solve::{fit, Fit};
 
 /// CLI curve fitting tool.
 /// Parameterise an equation from a CSV dataset.
@@ -40,12 +44,15 @@ pub struct App {
     pub no_stats: bool,
 }
 
+/// Versions of the equation resolver.
 #[derive(Debug, Copy, Clone, ValueEnum, Default)]
 pub enum EquationResolver {
+    /// Version #1.
     #[default]
     V1,
 }
 
+/// How do you want the output formatted?
 #[derive(Debug, Copy, Clone, ValueEnum, Default)]
 pub enum Output {
     /// Rich table view.
@@ -54,9 +61,19 @@ pub enum Output {
 
     /// Plain, space separated table.
     Plain,
+
+    /// Comma separated value output.
+    Csv,
+
+    /// Markdown formatted table.
+    Md,
+
+    /// Serialised structure of fitted parameters.
+    Json,
 }
 
 impl App {
+    /// Fit data and output results.
     pub fn run(self) -> Result<()> {
         match self.eq_resolver {
             EquationResolver::V1 => run::<expr::v1::Eq>(self),
@@ -98,17 +115,88 @@ where
     let hdrs = rdr.headers().wrap_err_with(with_path_ctx)?;
     let eq = E::parse(&expr, hdrs).wrap_err_with(with_path_ctx)?;
     let data = data::Data::try_from(rdr).wrap_err_with(with_path_ctx)?;
-    let fitted = solve::fit(eq, data, &target).wrap_err_with(with_path_ctx)?;
+    let fitted = fit(eq, data, &target).wrap_err_with(with_path_ctx)?;
 
     match out {
-        Output::Table => write_table(&fitted, !no_stats).into_diagnostic(),
+        Output::Table => write_rich_table(&fitted, !no_stats),
+        Output::Plain => write_plain_table(&fitted, !no_stats),
+        Output::Csv => write_csv_table(&fitted, !no_stats).into_diagnostic(),
+        Output::Md => write_md_table(&fitted, !no_stats),
+        Output::Json => write_json_table(&fitted),
     }
 }
 
-fn write_table(x: &solve::Fit, write_stats: bool) -> io::Result<()> {
+fn nfmtr() -> numfmt::Formatter {
+    "[~4]".parse::<numfmt::Formatter>().expect("just fine")
+}
+
+fn write_rich_table(x: &Fit, write_stats: bool) -> Result<()> {
+    write_table(x, write_stats, comfy_table::presets::UTF8_HORIZONTAL_ONLY).into_diagnostic()
+}
+
+fn write_plain_table(x: &Fit, write_stats: bool) -> Result<()> {
+    write_table(x, write_stats, comfy_table::presets::NOTHING).into_diagnostic()
+}
+
+fn write_csv_table(x: &Fit, write_stats: bool) -> io::Result<()> {
+    let Fit {
+        parameter_names,
+        parameter_values,
+        n,
+        rmsr,
+        rsq,
+        xerrs,
+        tvals,
+    } = x;
+
+    let mut nfmtr = nfmtr();
+
+    let mut stdout = io::stdout();
+
+    let mut w = csv::Writer::from_writer(&mut stdout);
+
+    w.write_record(&["Parameter", "Value", "Standard Error", "t-value"])?;
+
+    for (((p, v), e), t) in parameter_names
+        .iter()
+        .zip(parameter_values)
+        .zip(xerrs)
+        .zip(tvals)
+    {
+        w.write_field(p)?;
+        w.write_field(v.to_string())?;
+        w.write_field(e.to_string())?;
+        w.write_field(t.to_string())?;
+        w.write_record(None::<&[u8]>)?;
+    }
+
+    drop(w);
+
+    if write_stats {
+        writeln!(
+            &mut stdout,
+            "  Number of observations: {}",
+            nfmtr.fmt(*n as f64)
+        )?;
+        writeln!(
+            &mut stdout,
+            "  Root Mean Squared Residual error: {}",
+            nfmtr.fmt(*rmsr)
+        )?;
+        writeln!(&mut stdout, "  R-sq Adjusted: {}", nfmtr.fmt(*rsq))?;
+    }
+
+    Ok(())
+}
+
+fn write_md_table(x: &Fit, write_stats: bool) -> Result<()> {
+    write_table(x, write_stats, comfy_table::presets::ASCII_MARKDOWN).into_diagnostic()
+}
+
+fn write_table(x: &Fit, write_stats: bool, table_fmt: &str) -> io::Result<()> {
     use comfy_table::{Cell, CellAlignment as CA, Row, Table};
 
-    let solve::Fit {
+    let Fit {
         parameter_names,
         parameter_values,
         n,
@@ -120,7 +208,7 @@ fn write_table(x: &solve::Fit, write_stats: bool) -> io::Result<()> {
 
     let w = &mut io::stdout();
 
-    let mut nfmtr = "[~4]".parse::<numfmt::Formatter>().expect("just fine");
+    let mut nfmtr = nfmtr();
 
     let mut table = Table::new();
 
@@ -140,7 +228,7 @@ fn write_table(x: &solve::Fit, write_stats: bool) -> io::Result<()> {
         table.add_row(row);
     }
 
-    table.load_preset(comfy_table::presets::UTF8_HORIZONTAL_ONLY);
+    table.load_preset(table_fmt);
 
     writeln!(w, "{table}")?;
 
@@ -155,4 +243,8 @@ fn write_table(x: &solve::Fit, write_stats: bool) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+fn write_json_table(x: &Fit) -> Result<()> {
+    serde_json::to_writer(io::stdout(), x).into_diagnostic()
 }
