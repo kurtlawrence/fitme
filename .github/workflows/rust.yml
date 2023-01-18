@@ -1,0 +1,45 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  ci:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+      
+    name: Rust Tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        override: true
+        components: rustfmt,clippy
+
+    - name: Check Formatting
+      run: cargo fmt -- --check
+      if: matrix.os == 'ubuntu-latest'
+
+    - name: Build
+      run: cargo build
+
+    - name: Check Clippy
+      run: cargo clippy --all-features -- -D warnings
+      if: matrix.os == 'ubuntu-latest'
+
+    - name: Test
+      run: cargo test
