@@ -1,3 +1,11 @@
+//! CLI curve fitting tool. Parameterise an equation from a CSV dataset.
+//!
+//! `fitme` is primarily a CLI tool. For usage and examples, see the [repository
+//! README](https://github.com/kdr-aus/fitme).
+//!
+//! `fitme` _can_ be used as a library, the exposed API is a minimal set required for use of
+//! the [`fit`] function.
+//! _If using as a library, see the [`fit`] function's documentation for an example._
 #![warn(missing_docs)]
 
 use clap::{Parser, ValueEnum};
@@ -12,8 +20,8 @@ mod data;
 pub mod expr;
 mod solve;
 
+pub use data::{Data, DataRow, Headers};
 pub use expr::Equation;
-pub use data::{Headers, Data, DataRow};
 pub use solve::{fit, Fit};
 
 /// CLI curve fitting tool.
@@ -155,7 +163,7 @@ fn write_csv_table(x: &Fit, write_stats: bool) -> io::Result<()> {
 
     let mut w = csv::Writer::from_writer(&mut stdout);
 
-    w.write_record(&["Parameter", "Value", "Standard Error", "t-value"])?;
+    w.write_record(["Parameter", "Value", "Standard Error", "t-value"])?;
 
     for (((p, v), e), t) in parameter_names
         .iter()

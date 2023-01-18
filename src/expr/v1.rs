@@ -28,6 +28,9 @@ pub struct Eq {
 
     /// Parsed expression.
     expr: Expr,
+
+    /// Expression
+    estr: String,
 }
 
 impl Equation for Eq {
@@ -43,7 +46,7 @@ impl Equation for Eq {
         let mut params = Vec::new();
         for t in func.iter() {
             if let Token::Var(n) = t {
-                match columns.find_ignore_case(n) {
+                match columns.find_ignore_case_and_ws(n) {
                     Some(i) => vars.push((n.to_string(), i)),
                     None => params.push(n.to_string()),
                 }
@@ -54,6 +57,7 @@ impl Equation for Eq {
             vars,
             params,
             expr: func,
+            estr: expr.to_string(),
         })
     }
 
@@ -78,13 +82,21 @@ impl Equation for Eq {
 
         inputs.extend_from_slice(params); // first, the stored params
         for (_, i) in &self.vars {
-            inputs.push(row.get(*i)?); // then the params
+            inputs.push(row.get_num(*i)?.ok()?); // then the params
         }
 
         Some(f(&inputs)) // eval the function
     }
 
-    fn into_params(self) -> Vec<String> {
-        self.params
+    fn expr(&self) -> Option<String> {
+        self.estr.to_string().into()
+    }
+
+    fn params(&self) -> Vec<String> {
+        self.params.clone()
+    }
+
+    fn vars(&self) -> Vec<String> {
+        self.vars.iter().map(|(s, _)| s.clone()).collect()
     }
 }

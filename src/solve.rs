@@ -98,12 +98,26 @@ struct Fitter<E> {
 pub fn fit<E: Equation>(eq: E, data: Data, target: &str) -> Result<Fit> {
     let tgt = data
         .headers()
-        .find_ignore_case(target)
-        .ok_or_else(|| miette!("could not find column '{}' in headers", target))?;
+        .find_ignore_case_and_ws(target)
+        .ok_or_else(|| miette!("could not find column '{}' in headers", target))
+        .wrap_err_with(|| data::match_hdr_help(data.headers(), target))?;
+
+    ensure_float_values_in_data(&eq, &data, tgt)?;
 
     let fitter = Fitter { data, eq, tgt };
 
     let mut params = vec![0f64; fitter.eq.params_len()];
+
+    if params.is_empty() {
+        let mut x = Err(miette!("equation has 0 parameters to fit")).wrap_err(
+            "equation must have a least one variable which does not match a column header",
+        );
+        if let Some(e) = fitter.eq.expr() {
+            x = x.wrap_err_with(|| format!("supplied expr: {e}"));
+        }
+
+        return x;
+    }
 
     let status = fitter
         .mpfit(&mut params, None, &Default::default())
@@ -117,7 +131,7 @@ pub fn fit<E: Equation>(eq: E, data: Data, target: &str) -> Result<Fit> {
 
     let mean_y = data
         .rows()
-        .map(|row| row.get(tgt).expect("inside data"))
+        .map(|row| row.get_num(tgt).expect("inside data").expect("is number"))
         .sum::<f64>()
         / n;
 
@@ -140,7 +154,7 @@ pub fn fit<E: Equation>(eq: E, data: Data, target: &str) -> Result<Fit> {
     let ssr = data
         .rows()
         .zip(&y_pred)
-        .map(|(row, y_)| row.get(tgt).expect("inside data") - y_)
+        .map(|(row, y_)| row.get_num(tgt).expect("inside data").expect("is number") - y_)
         .map(|x| x.powi(2))
         .sum::<f64>();
 
@@ -177,7 +191,7 @@ pub fn fit<E: Equation>(eq: E, data: Data, target: &str) -> Result<Fit> {
         .collect::<Vec<_>>();
 
     Ok(Fit {
-        parameter_names: eq.into_params(),
+        parameter_names: eq.params(),
         parameter_values: params,
         n: data.len() as u64,
         xerrs,
@@ -195,10 +209,36 @@ impl<E: Equation> MPFitter for Fitter<E> {
     fn eval(&self, params: &[f64], deviates: &mut [f64]) -> MPResult<()> {
         for (d, row) in deviates.iter_mut().zip(self.data.rows()) {
             let f = self.eq.solve(params, row).ok_or(MPError::Eval)?;
-            let y = row.get(self.tgt).expect("inside data");
+            let y = row
+                .get_num(self.tgt)
+                .expect("inside data")
+                .expect("is number");
             *d = y - f;
         }
 
         Ok(())
     }
+}
+
+fn ensure_float_values_in_data<E: Equation>(eq: &E, data: &Data, tgt: usize) -> Result<()> {
+    fn chk_col(d: &Data, c: usize) -> Result<()> {
+        for r in d.rows() {
+            r.get_num(c)
+                .ok_or_else(|| miette!("column index {} not in table", c))??;
+        }
+        Ok(())
+    }
+
+    chk_col(data, tgt)?;
+
+    for p in eq.vars() {
+        let c = data
+            .headers()
+            .find_ignore_case_and_ws(&p)
+            .ok_or_else(|| miette!("could not find column '{}' in headers", p))
+            .wrap_err_with(|| data::match_hdr_help(data.headers(), &p))?;
+        chk_col(data, c)?;
+    }
+
+    Ok(())
 }

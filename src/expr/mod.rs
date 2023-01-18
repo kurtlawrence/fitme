@@ -16,6 +16,12 @@ pub trait Equation: Sized {
     /// Evaluate the expression with the given set of parameters and a single data row.
     fn solve(&self, params: &[f64], row: DataRow) -> Option<f64>;
 
+    /// Fetch the string form of the expression, if it exists.
+    fn expr(&self) -> Option<String>;
+
     /// Extract out the parameter names.
-    fn into_params(self) -> Vec<String>;
+    fn params(&self) -> Vec<String>;
+
+    /// Extract out the variable names.
+    fn vars(&self) -> Vec<String>;
 }
