@@ -50,6 +50,11 @@ pub struct App {
     /// Do not output the fitting statistics along with parameters.
     #[arg(short, long)]
     pub no_stats: bool,
+
+    /// Output debug information about the expression and input data.
+    /// Does not attempt a fit.
+    #[arg(long)]
+    pub debug: bool,
 }
 
 /// Versions of the equation resolver.
@@ -100,6 +105,7 @@ where
         eq_resolver: _,
         out,
         no_stats,
+        debug,
     } = app;
 
     let mut rdr = match &data {
@@ -122,6 +128,11 @@ where
 
     let hdrs = rdr.headers().wrap_err_with(with_path_ctx)?;
     let eq = E::parse(&expr, hdrs).wrap_err_with(with_path_ctx)?;
+
+    if debug {
+        return output_debug(&eq, hdrs, &target);
+    }
+
     let data = data::Data::try_from(rdr).wrap_err_with(with_path_ctx)?;
     let fitted = fit(eq, data, &target).wrap_err_with(with_path_ctx)?;
 
@@ -255,4 +266,46 @@ fn write_table(x: &Fit, write_stats: bool, table_fmt: &str) -> io::Result<()> {
 
 fn write_json_table(x: &Fit) -> Result<()> {
     serde_json::to_writer(io::stdout(), x).into_diagnostic()
+}
+
+fn output_debug<E: Equation>(eq: &E, hdrs: &Headers, target: &str) -> Result<()> {
+    if let Some(expr) = eq.expr() {
+        println!("✖️ Expression:");
+        println!("  {expr}");
+    }
+
+    let params = eq.params();
+    println!("📊 Parameters:");
+    if params.is_empty() {
+        println!("  <none>");
+    } else {
+        for p in params {
+            print!("  {p}");
+            let h = data::match_hdr_help(hdrs, &p);
+            if !h.starts_with("help - no columns match") {
+                println!(" :: {h}");
+            } else {
+                println!();
+            }
+        }
+    }
+
+    let vars = eq.vars();
+    println!("🧮 Variables:");
+    if vars.is_empty() {
+        println!("  <none>");
+    } else {
+        for x in vars {
+            println!("  {x}");
+        }
+    }
+
+    println!("🔎 Target:");
+    println!("  {target}");
+
+    hdrs.find_ignore_case_and_ws(target)
+        .ok_or_else(|| miette!("target column '{}' not found in headers", target))
+        .wrap_err_with(|| data::match_hdr_help(hdrs, target))?;
+
+    Ok(())
 }
