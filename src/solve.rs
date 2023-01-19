@@ -209,11 +209,16 @@ impl<E: Equation> MPFitter for Fitter<E> {
     fn eval(&self, params: &[f64], deviates: &mut [f64]) -> MPResult<()> {
         for (d, row) in deviates.iter_mut().zip(self.data.rows()) {
             let f = self.eq.solve(params, row).ok_or(MPError::Eval)?;
-            let y = row
-                .get_num(self.tgt)
-                .expect("inside data")
-                .expect("is number");
-            *d = y - f;
+
+            if f.is_finite() {
+                let y = row
+                    .get_num(self.tgt)
+                    .expect("inside data")
+                    .expect("is number");
+                *d = y - f;
+            } else {
+                *d = 1e13; // very large deviation
+            }
         }
 
         Ok(())

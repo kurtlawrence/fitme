@@ -150,7 +150,11 @@ c,3.2099657167997013,0.013936863525869892,230.32195951702457
 - `+,-,*,/`
 - `%`: remainder
 - `^`: power
-- `sqrt(), abs(), exp(), ln()`
+- `pi, e`
+- `sqrt(), abs()`
+- `exp(), ln(), log()`
 - `sin(), cos(), tan()`
+- `sinh(), cosh(), tanh()`
+- `floor(), ceil(), round()`
 
 🔬 If you need more math support, please [raise an issue](https://github.com/kdr-aus/fitme/issues).
