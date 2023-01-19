@@ -76,11 +76,7 @@ impl Equation for Eq {
         let _ = x
             .expr
             .clone()
-<<<<<<< HEAD
             .bindn_with_context(ctx, &v)
-=======
-            .bindn(&v)
->>>>>>> 31dfae5 (fmt)
             .into_diagnostic()
             .wrap_err_with(|| format!("in expr: {}", x.estr))?;
 
@@ -99,11 +95,7 @@ impl Equation for Eq {
         let f = self
             .expr
             .clone()
-<<<<<<< HEAD
             .bindn_with_context(ctx(), &vars)
-=======
-            .bindn(&vars)
->>>>>>> 31dfae5 (fmt)
             .map_err(|e| eprintln!("{e}"))
             .ok()?;
 
