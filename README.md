@@ -158,3 +158,60 @@ c,3.2099657167997013,0.013936863525869892,230.32195951702457
 - `floor(), ceil(), round()`
 
 🔬 If you need more math support, please [raise an issue](https://github.com/kdr-aus/fitme/issues).
+
+# Example Equations
+
+## Linear
+
+- Equation: `y = Ax + B`
+- Columns: `y, x`
+- Parameters: `A, B`
+
+```bash
+> fitme y "Ax + B"
+```
+
+## Multiple Linear Regression
+
+- Equation: `y = P0 * x0 + P1 * x1 + ... + Pn * xn + C`
+- Columns: `y, x0, x1, ... , xn`
+- Parameters: `P0, P1, ... , Pn, C`
+
+```bash
+> fitme y "P0 * x0 + P1 * x1 + ... + Pn * xn + C"
+```
+
+## Normal Distribution
+
+The goal is to fit to a CDF, so the input CSV will have _P_ as the probability [0,1], and 
+_x_ as the variable.
+
+$$P = {1\over2} \bigg\lbrack {1 + erf \Big( {{x-\mu}\over{\sigma\sqrt2}} \Big)}\bigg\rbrack$$
+
+We can [approximate the `erf` function with](https://math.stackexchange.com/questions/321569/approximating-the-error-function-erf-by-analytical-functions):
+
+$$erf(x) \approx \tanh \big( {\sqrt{\pi}\log(2)x} \big)$$
+
+So:
+
+```math
+P = {1\over2} \bigg\lbrack 
+  {1 + \tanh \Big( 
+    {{(x-\mu)\sqrt\pi\log(2)}\over{\sigma\sqrt2}} 
+  \Big)}
+\bigg\rbrack
+```
+
+This transforms into the expression:
+```plaintext
+0.5 * (1 + tanh(((x - Mean) * sqrt(pi) * log(2)) / (Stdev * sqrt(2))))
+
+Parameters: Mean, Stdev
+Variables: x
+```
+
+And to fit:
+
+```bash
+> fitme P  "0.5 * (1 + tanh(((x - Mean) * sqrt(pi) * log(2)) / (Stdev * sqrt(2))))"
+```
