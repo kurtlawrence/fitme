@@ -130,7 +130,7 @@ where
     let eq = E::parse(&expr, hdrs).wrap_err_with(with_path_ctx)?;
 
     if debug {
-        return output_debug(&eq, &hdrs, &target);
+        return output_debug(&eq, hdrs, &target);
     }
 
     let data = data::Data::try_from(rdr).wrap_err_with(with_path_ctx)?;
