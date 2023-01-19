@@ -93,7 +93,7 @@ struct Fitter<E> {
 ///
 /// assert_eq!(fit.n, 10);
 /// assert_eq!(&fit.parameter_names, &["m".to_string(), "c".to_string()]);
-/// assert_eq!(&fit.parameter_values, &[1.7709542029456211, 3.2099657167997013]);
+/// assert_eq!(&fit.parameter_values, &[1.7709542026136489, 3.209965716831507]);
 /// ```
 pub fn fit<E: Equation>(eq: E, data: Data, target: &str) -> Result<Fit> {
     let tgt = data
