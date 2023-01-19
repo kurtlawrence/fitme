@@ -1,7 +1,6 @@
 //! Version 1 of the equation resolver.
-
 use super::*;
-use meval::{tokenizer::Token, Expr};
+use meval::{tokenizer::Token, Expr, ContextProvider};
 
 /*** A note on the implementation ***
  *
@@ -13,6 +12,12 @@ use meval::{tokenizer::Token, Expr};
  * Instead, the bind happens on the `solve` method, both params and variables are bound in this
  * call which solves the lifetime issue.
  */
+
+fn ctx() -> meval::Context<'static> {
+    let mut x = meval::Context::new();
+    x.func("log", |x| x.log10());
+    x
+}
 
 /// Version 1 of the equation resolver.
 ///
@@ -40,12 +45,18 @@ impl Equation for Eq {
             .into_diagnostic()
             .wrap_err_with(|| format!("parsing '{expr}' failed"))?;
 
+        let ctx = ctx();
+
         // map any *matched* variables as column variables, and
         // any *unmatched* variables as parameters
         let mut vars = Vec::new();
         let mut params = Vec::new();
         for t in func.iter() {
             if let Token::Var(n) = t {
+                if ctx.get_var(n).is_some() {
+                    continue; // this variable is captured by the context, skip it
+                }
+                    
                 match columns.find_ignore_case_and_ws(n) {
                     Some(i) => vars.push((n.to_string(), i)),
                     None => params.push(n.to_string()),
@@ -75,7 +86,7 @@ impl Equation for Eq {
             .collect::<Vec<_>>();
 
         // bind the expression to the variables
-        let f = self.expr.clone().bindn(&vars).ok()?;
+        let f = self.expr.clone().bindn_with_context(ctx(), &vars).ok()?;
 
         // build the inputs
         let mut inputs = Vec::with_capacity(vars.len());
