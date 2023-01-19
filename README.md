@@ -186,7 +186,7 @@ c,3.2099657167997013,0.013936863525869892,230.32195951702457
 The goal is to fit to a CDF, so the input CSV will have _P_ as the probability [0,1], and 
 _x_ as the variable.
 
-$$P = {1\over2} \bigg\lbrack {1 + erf \Big( {{x-\mu}\over{\sigma\sqrt2}} \Big)}\bigg\rbrack$$
+$$P = {1\over2} \bigg\lbrack {1 + erf \Big( {{x-\mu}\over{\sigma^2\sqrt2}} \Big)}\bigg\rbrack$$
 
 We can [approximate the `erf` function with](https://math.stackexchange.com/questions/321569/approximating-the-error-function-erf-by-analytical-functions):
 
@@ -197,14 +197,14 @@ So:
 ```math
 P = {1\over2} \bigg\lbrack 
   {1 + \tanh \Big( 
-    {{(x-\mu)\sqrt\pi\log(2)}\over{\sigma\sqrt2}} 
+    {{(x-\mu)\sqrt\pi\log(2)}\over{\sigma^2\sqrt2}} 
   \Big)}
 \bigg\rbrack
 ```
 
 This transforms into the expression:
 ```plaintext
-0.5 * (1 + tanh(((x - Mean) * sqrt(pi) * log(2)) / (Stdev * sqrt(2))))
+0.5 * (1 + tanh(((x - Mean) * sqrt(pi) * log(2)) / (Stdev^2 * sqrt(2))))
 
 Parameters: Mean, Stdev
 Variables: x
@@ -213,5 +213,5 @@ Variables: x
 And to fit:
 
 ```bash
-> fitme P  "0.5 * (1 + tanh(((x - Mean) * sqrt(pi) * log(2)) / (Stdev * sqrt(2))))"
+> fitme P  "0.5 * (1 + tanh(((x - Mean) * sqrt(pi) * log(2)) / (Stdev^2 * sqrt(2))))"
 ```

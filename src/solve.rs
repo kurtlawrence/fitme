@@ -106,7 +106,7 @@ pub fn fit<E: Equation>(eq: E, data: Data, target: &str) -> Result<Fit> {
 
     let fitter = Fitter { data, eq, tgt };
 
-    let mut params = vec![1e-3; fitter.eq.params_len()];
+    let mut params = vec![0.1; fitter.eq.params_len()];
 
     if params.is_empty() {
         let mut x = Err(miette!("equation has 0 parameters to fit")).wrap_err(
