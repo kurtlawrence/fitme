@@ -1,6 +1,6 @@
 //! Version 1 of the equation resolver.
 use super::*;
-use meval::{tokenizer::Token, Expr, ContextProvider};
+use meval::{tokenizer::Token, ContextProvider, Expr};
 
 /*** A note on the implementation ***
  *
@@ -56,7 +56,7 @@ impl Equation for Eq {
                 if ctx.get_var(n).is_some() {
                     continue; // this variable is captured by the context, skip it
                 }
-                    
+
                 match columns.find_ignore_case_and_ws(n) {
                     Some(i) => vars.push((n.to_string(), i)),
                     None => params.push(n.to_string()),
