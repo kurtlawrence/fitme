@@ -64,12 +64,23 @@ impl Equation for Eq {
             }
         }
 
-        Ok(Self {
+        let x = Self {
             vars,
             params,
             expr: func,
             estr: expr.to_string(),
-        })
+        };
+
+        // do a trial run to ensure that the expr could be evaluated
+        let v = x.build_inputs();
+        let _ = x
+            .expr
+            .clone()
+            .bindn_with_context(ctx, &v)
+            .into_diagnostic()
+            .wrap_err_with(|| format!("in expr: {}", x.estr))?;
+
+        Ok(x)
     }
 
     fn params_len(&self) -> usize {
@@ -78,22 +89,22 @@ impl Equation for Eq {
 
     fn solve(&self, params: &[f64], row: DataRow) -> Option<f64> {
         // build a vector of the params + variable names
-        let vars = self
-            .params
-            .iter()
-            .map(String::as_str)
-            .chain(self.vars.iter().map(|(x, _)| x.as_str()))
-            .collect::<Vec<_>>();
+        let vars = self.build_inputs();
 
         // bind the expression to the variables
-        let f = self.expr.clone().bindn_with_context(ctx(), &vars).ok()?;
+        let f = self
+            .expr
+            .clone()
+            .bindn_with_context(ctx(), &vars)
+            .map_err(|e| eprintln!("{e}"))
+            .ok()?;
 
         // build the inputs
         let mut inputs = Vec::with_capacity(vars.len());
 
         inputs.extend_from_slice(params); // first, the stored params
         for (_, i) in &self.vars {
-            inputs.push(row.get_num(*i)?.ok()?); // then the params
+            inputs.push(row.get_num(*i)?.map_err(|e| eprintln!("{e}")).ok()?); // then the params
         }
 
         Some(f(&inputs)) // eval the function
@@ -109,5 +120,15 @@ impl Equation for Eq {
 
     fn vars(&self) -> Vec<String> {
         self.vars.iter().map(|(s, _)| s.clone()).collect()
+    }
+}
+
+impl Eq {
+    fn build_inputs(&self) -> Vec<&str> {
+        self.params
+            .iter()
+            .map(String::as_str)
+            .chain(self.vars.iter().map(|(x, _)| x.as_str()))
+            .collect()
     }
 }
