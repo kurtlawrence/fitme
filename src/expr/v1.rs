@@ -64,6 +64,11 @@ impl Equation for Eq {
             }
         }
 
+        vars.sort_unstable();
+        vars.dedup();
+        params.sort_unstable();
+        params.dedup();
+
         let x = Self {
             vars,
             params,
