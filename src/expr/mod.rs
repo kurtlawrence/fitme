@@ -25,3 +25,20 @@ pub trait Equation: Sized {
     /// Extract out the variable names.
     fn vars(&self) -> Vec<String>;
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn distinct_params_and_vars() {
+        fn test<E: Equation>() {
+            let e = E::parse("x * x + d + d", &Headers::from_iter(["d"])).unwrap();
+
+            assert_eq!(e.params(), vec!["x".to_string()]);
+            assert_eq!(e.vars(), vec!["d".to_string()]);
+        }
+
+        test::<v1::Eq>();
+    }
+}
