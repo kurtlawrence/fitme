@@ -93,7 +93,7 @@ struct Fitter<E> {
 ///
 /// assert_eq!(fit.n, 10);
 /// assert_eq!(&fit.parameter_names, &["c".to_string(), "m".to_string()]);
-/// assert_eq!(&fit.parameter_values, &[3.209965716953847, 1.7709542024618066]);
+/// assert_eq!(&fit.parameter_values, &[3.2099657167997013, 1.7709542029456211]);
 /// ```
 pub fn fit<E: Equation>(eq: E, data: Data, target: &str) -> Result<Fit> {
     let tgt = data
@@ -106,7 +106,9 @@ pub fn fit<E: Equation>(eq: E, data: Data, target: &str) -> Result<Fit> {
 
     let fitter = Fitter { data, eq, tgt };
 
-    let mut params = vec![0.1; fitter.eq.params_len()];
+    // we try to guess a set of params that can work
+    let mut params =
+        guess_params(&fitter.data, &fitter.eq).unwrap_or_else(|| vec![0.1; fitter.eq.params_len()]);
 
     if params.is_empty() {
         let mut x = Err(miette!("equation has 0 parameters to fit")).wrap_err(
@@ -119,8 +121,13 @@ pub fn fit<E: Equation>(eq: E, data: Data, target: &str) -> Result<Fit> {
         return x;
     }
 
+    let config = rmpfit::MPConfig {
+        max_iter: 3000,
+        ..Default::default()
+    };
+
     let status = fitter
-        .mpfit(&mut params, None, &Default::default())
+        .mpfit(&mut params, None, &config)
         .map_err(|e| miette!("{}", e))
         .wrap_err("failed to fit the equation to the input data")?;
 
@@ -246,4 +253,30 @@ fn ensure_float_values_in_data<E: Equation>(eq: &E, data: &Data, tgt: usize) -> 
     }
 
     Ok(())
+}
+
+fn guess_params<E: Equation>(data: &Data, eq: &E) -> Option<Vec<f64>> {
+    let r = data.rows().next()?;
+    let mut ps = vec![0.0; eq.params_len()];
+
+    if eq.solve(&ps, r).map(|x| x.is_finite()).unwrap_or_default() {
+        return Some(ps);
+    }
+
+    ps.fill(1.0);
+    if eq.solve(&ps, r).map(|x| x.is_finite()).unwrap_or_default() {
+        return Some(ps);
+    }
+
+    ps.fill(0.5);
+    if eq.solve(&ps, r).map(|x| x.is_finite()).unwrap_or_default() {
+        return Some(ps);
+    }
+
+    ps.iter_mut().enumerate().for_each(|(i, x)| *x = i as f64);
+    if eq.solve(&ps, r).map(|x| x.is_finite()).unwrap_or_default() {
+        return Some(ps);
+    }
+
+    None
 }
