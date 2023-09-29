@@ -29,8 +29,7 @@ fn target_not_found() {
         .failure()
         .stderr(
             "\
-Error: 
-  × in \'tests/file1.csv\'
+Error:   × in \'tests/file1.csv\'
   ├─▶ help - these headers are similar: y
   ╰─▶ could not find column \'y_\' in headers
 
@@ -45,8 +44,7 @@ Error:
         .failure()
         .stderr(
             "\
-Error: 
-  × in \'tests/file1.csv\'
+Error:   × in \'tests/file1.csv\'
   ├─▶ help - these headers are similar: aSpacecol
   ╰─▶ could not find column \'a space \' in headers
 
@@ -64,8 +62,7 @@ fn file_not_found() {
         .failure()
         .stderr(
             "\
-Error: 
-  × failed to open \'not-here\'
+Error:   × failed to open \'not-here\'
   ╰─▶ No such file or directory (os error 2)
 
 ",
@@ -104,8 +101,7 @@ fn zero_params() {
         .failure()
         .stderr(
             "\
-Error: 
-  × in \'tests/file1.csv\'
+Error:   × in \'tests/file1.csv\'
   ├─▶ supplied expr: 2 * x
   ├─▶ equation must have a least one variable which does not match a column
   │   header
@@ -125,8 +121,7 @@ fn invalid_expr() {
         .failure()
         .stderr(
             "\
-Error: 
-  × in \'tests/file1.csv\'
+Error:   × in \'tests/file1.csv\'
   ├─▶ parsing \'3 * 2x +\' failed
   ╰─▶ Parse error: Unexpected token at byte 5.
 
@@ -144,8 +139,7 @@ fn invalid_csv() {
         .failure()
         .stderr(
             "\
-Error: 
-  × in \'tests/file2.csv\'
+Error:   × in \'tests/file2.csv\'
   ├─▶ in row index 2
   ├─▶ in column index 1
   ╰─▶ failed to parse \'bar\' as number
@@ -164,8 +158,7 @@ fn supported_math() {
         .failure()
         .stderr(
             "\
-Error: 
-  × in \'tests/file1.csv\'
+Error:   × in \'tests/file1.csv\'
   ├─▶ supplied expr: sin(x) + ln(x) + cos(x) + tan(x) + log(x) + sqrt(x) +
   │   exp(x) + abs(x)
   ├─▶ equation must have a least one variable which does not match a column
