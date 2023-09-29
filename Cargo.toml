@@ -13,7 +13,7 @@ categories = ["command-line-utilities", "mathematics", "science"]
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-comfy-table = "6"
+comfy-table = "7"
 csv = "1"
 meval = "0.2"
 miette = { version = "5", features = ["fancy"] }
@@ -25,4 +25,4 @@ simsearch = "0.2"
 
 [dev-dependencies]
 assert_cmd = "2"
-fastrand = "1"
+fastrand = "2"

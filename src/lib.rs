@@ -192,17 +192,13 @@ fn write_csv_table(x: &Fit, write_stats: bool) -> io::Result<()> {
     drop(w);
 
     if write_stats {
-        writeln!(
-            &mut stdout,
-            "  Number of observations: {}",
-            nfmtr.fmt(*n as f64)
-        )?;
+        writeln!(&mut stdout, "  Number of observations: {}", nfmtr.fmt2(*n))?;
         writeln!(
             &mut stdout,
             "  Root Mean Squared Residual error: {}",
-            nfmtr.fmt(*rmsr)
+            nfmtr.fmt2(*rmsr)
         )?;
-        writeln!(&mut stdout, "  R-sq Adjusted: {}", nfmtr.fmt(*rsq))?;
+        writeln!(&mut stdout, "  R-sq Adjusted: {}", nfmtr.fmt2(*rsq))?;
     }
 
     Ok(())
@@ -241,9 +237,9 @@ fn write_table(x: &Fit, write_stats: bool, table_fmt: &str) -> io::Result<()> {
     {
         let mut row = Row::new();
         row.add_cell(Cell::new(p))
-            .add_cell(Cell::new(nfmtr.fmt(*v)).set_alignment(CA::Right))
-            .add_cell(Cell::new(nfmtr.fmt(*e)).set_alignment(CA::Right))
-            .add_cell(Cell::new(nfmtr.fmt(*t)).set_alignment(CA::Right));
+            .add_cell(Cell::new(nfmtr.fmt2(*v)).set_alignment(CA::Right))
+            .add_cell(Cell::new(nfmtr.fmt2(*e)).set_alignment(CA::Right))
+            .add_cell(Cell::new(nfmtr.fmt2(*t)).set_alignment(CA::Right));
         table.add_row(row);
     }
 
@@ -252,13 +248,13 @@ fn write_table(x: &Fit, write_stats: bool, table_fmt: &str) -> io::Result<()> {
     writeln!(w, "{table}")?;
 
     if write_stats {
-        writeln!(w, "  Number of observations: {}", nfmtr.fmt(*n as f64))?;
+        writeln!(w, "  Number of observations: {}", nfmtr.fmt2(*n))?;
         writeln!(
             w,
             "  Root Mean Squared Residual error: {}",
-            nfmtr.fmt(*rmsr)
+            nfmtr.fmt2(*rmsr)
         )?;
-        writeln!(w, "  R-sq Adjusted: {}", nfmtr.fmt(*rsq))?;
+        writeln!(w, "  R-sq Adjusted: {}", nfmtr.fmt2(*rsq))?;
     }
 
     Ok(())
