@@ -35,7 +35,7 @@ struct Fitter<E> {
 
 /// Fit an equation using the input data.
 ///
-/// If you are using `fitme` as a library, this is function to use!
+/// If you are using `fitme` as a library, this is the function to use!
 ///
 /// ## Equation
 /// The equation is anything which implements [`Equation`].
