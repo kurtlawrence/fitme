@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Kurt Lawrence <kurtlawrence.info>"]
 description = "CLI curve fitting tool. Parameterise an equation from a CSV dataset."
 license = "MIT"
-repository = "https://github.com/kdr-aus/fitme"
+repository = "https://github.com/kurtlawrence/fitme"
 keywords = ["cli", "regression", "curve-fitting"]
 categories = ["command-line-utilities", "mathematics", "science"]
 

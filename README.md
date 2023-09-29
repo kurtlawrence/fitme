@@ -37,7 +37,7 @@ Currently, only installation from source is supported:
 cargo install fitme
 
 # using github
-cargo install --git https://github.com/kdr-aus/fitme
+cargo install --git https://github.com/kurtlawrence/fitme
 ```
 
 # Usage
@@ -157,7 +157,7 @@ c,3.2099657167997013,0.013936863525869892,230.32195951702457
 - `sinh(), cosh(), tanh()`
 - `floor(), ceil(), round()`
 
-🔬 If you need more math support, please [raise an issue](https://github.com/kdr-aus/fitme/issues).
+🔬 If you need more math support, please [raise an issue](https://github.com/kurtlawrence/fitme/issues).
 
 # Example Equations
 

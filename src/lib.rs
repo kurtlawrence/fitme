@@ -1,7 +1,7 @@
 //! CLI curve fitting tool. Parameterise an equation from a CSV dataset.
 //!
 //! `fitme` is primarily a CLI tool. For usage and examples, see the [repository
-//! README](https://github.com/kdr-aus/fitme).
+//! README](https://github.com/kurtlawrence/fitme).
 //!
 //! `fitme` _can_ be used as a library, the exposed API is a minimal set required for use of
 //! the [`fit`] function.
