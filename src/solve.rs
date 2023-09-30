@@ -27,6 +27,24 @@ pub struct Fit {
     pub tvals: Vec<f64>,
 }
 
+impl Fit {
+    /// Write the results of the fit in a particular output format to a writer.
+    pub fn write_results<W: std::io::Write>(
+        &self,
+        output: Output,
+        write_statistics: bool,
+        wtr: W,
+    ) -> Result<()> {
+        match output {
+            Output::Table => write_rich_table(self, write_statistics, wtr),
+            Output::Plain => write_plain_table(self, write_statistics, wtr),
+            Output::Csv => write_csv_table(self, write_statistics, wtr).into_diagnostic(),
+            Output::Md => write_md_table(self, write_statistics, wtr),
+            Output::Json => write_json_table(self),
+        }
+    }
+}
+
 struct Fitter<E> {
     data: Data,
     eq: E,
@@ -279,4 +297,125 @@ fn guess_params<E: Equation>(data: &Data, eq: &E) -> Option<Vec<f64>> {
     }
 
     None
+}
+
+fn nfmtr() -> numfmt::Formatter {
+    "[~4]".parse::<numfmt::Formatter>().expect("just fine")
+}
+
+fn write_rich_table(x: &Fit, write_stats: bool, w: impl Write) -> Result<()> {
+    write_table(
+        x,
+        write_stats,
+        comfy_table::presets::UTF8_HORIZONTAL_ONLY,
+        w,
+    )
+    .into_diagnostic()
+}
+
+fn write_plain_table(x: &Fit, write_stats: bool, w: impl Write) -> Result<()> {
+    write_table(x, write_stats, comfy_table::presets::NOTHING, w).into_diagnostic()
+}
+
+fn write_csv_table(x: &Fit, write_stats: bool, mut wtr: impl Write) -> io::Result<()> {
+    let Fit {
+        parameter_names,
+        parameter_values,
+        n,
+        rmsr,
+        rsq,
+        xerrs,
+        tvals,
+    } = x;
+
+    let mut nfmtr = nfmtr();
+
+    let mut w = csv::Writer::from_writer(&mut wtr);
+
+    w.write_record(["Parameter", "Value", "Standard Error", "t-value"])?;
+
+    for (((p, v), e), t) in parameter_names
+        .iter()
+        .zip(parameter_values)
+        .zip(xerrs)
+        .zip(tvals)
+    {
+        w.write_field(p)?;
+        w.write_field(v.to_string())?;
+        w.write_field(e.to_string())?;
+        w.write_field(t.to_string())?;
+        w.write_record(None::<&[u8]>)?;
+    }
+
+    drop(w);
+
+    if write_stats {
+        writeln!(&mut wtr, "  Number of observations: {}", nfmtr.fmt2(*n))?;
+        writeln!(
+            &mut wtr,
+            "  Root Mean Squared Residual error: {}",
+            nfmtr.fmt2(*rmsr)
+        )?;
+        writeln!(&mut wtr, "  R-sq Adjusted: {}", nfmtr.fmt2(*rsq))?;
+    }
+
+    Ok(())
+}
+
+fn write_md_table(x: &Fit, write_stats: bool, w: impl Write) -> Result<()> {
+    write_table(x, write_stats, comfy_table::presets::ASCII_MARKDOWN, w).into_diagnostic()
+}
+
+fn write_table(x: &Fit, write_stats: bool, table_fmt: &str, mut w: impl Write) -> io::Result<()> {
+    use comfy_table::{Cell, CellAlignment as CA, Row, Table};
+
+    let Fit {
+        parameter_names,
+        parameter_values,
+        n,
+        rmsr,
+        rsq,
+        xerrs,
+        tvals,
+    } = x;
+
+    let mut nfmtr = nfmtr();
+
+    let mut table = Table::new();
+
+    table.set_header(["Parameter", "Value", "Standard Error", "t-value"]);
+
+    for (((p, v), e), t) in parameter_names
+        .iter()
+        .zip(parameter_values)
+        .zip(xerrs)
+        .zip(tvals)
+    {
+        let mut row = Row::new();
+        row.add_cell(Cell::new(p))
+            .add_cell(Cell::new(nfmtr.fmt2(*v)).set_alignment(CA::Right))
+            .add_cell(Cell::new(nfmtr.fmt2(*e)).set_alignment(CA::Right))
+            .add_cell(Cell::new(nfmtr.fmt2(*t)).set_alignment(CA::Right));
+        table.add_row(row);
+    }
+
+    table.load_preset(table_fmt);
+
+    writeln!(w, "{table}")?;
+
+    if write_stats {
+        writeln!(w, "  Number of observations: {}", nfmtr.fmt2(*n))?;
+        writeln!(
+            w,
+            "  Root Mean Squared Residual error: {}",
+            nfmtr.fmt2(*rmsr)
+        )?;
+        writeln!(w, "  R-sq Adjusted: {}", nfmtr.fmt2(*rsq))?;
+    }
+
+    Ok(())
+}
+
+fn write_json_table(x: &Fit) -> Result<()> {
+    serde_json::to_writer(io::stdout(), x).into_diagnostic()
 }
